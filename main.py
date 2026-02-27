@@ -1,4 +1,5 @@
 import tkinter as tk
+from os import name as os_name
 from pathlib import Path
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
@@ -38,6 +39,7 @@ class GoatBehaviorDetectionApp:
         self.show_conf = tk.BooleanVar(value=True)
         self.is_running = False
         self.camera_session = None
+        self.camera_capture = None
         self.current_video_capture = None
         self.video_job = None
         self.video_paused = True
@@ -257,26 +259,55 @@ class GoatBehaviorDetectionApp:
 
     def _run_camera_detection(self, classes):
         self._log(f"正在打开摄像头 {self.camera_index.get()} 并执行同步实时检测...")
-        stream = self.model.predict(
-            source=self.camera_index.get(),
-            imgsz=self.imgsz.get(),
-            conf=self.conf.get(),
-            iou=self.iou.get(),
-            max_det=self.max_det.get(),
-            device=self.device.get().strip(),
-            classes=classes,
-            show=False,
-            stream=True,
-            verbose=False,
-        )
-        self.camera_session = stream
-        for result in stream:
-            if not self.is_running:
-                break
-            plotted = result.plot(labels=self.show_labels.get(), conf=self.show_conf.get())
-            rgb = cv2.cvtColor(plotted, cv2.COLOR_BGR2RGB)
-            self.root.after(0, lambda frm=rgb: self._display_frame(frm))
-        self.root.after(0, self._on_camera_detection_stopped)
+        capture = self._open_camera_capture(self.camera_index.get())
+        if not capture.isOpened():
+            raise RuntimeError("摄像头打开失败，请检查编号是否正确或关闭占用摄像头的软件后重试。")
+
+        self.camera_capture = capture
+        failed_reads = 0
+        try:
+            while self.is_running:
+                success, frame = capture.read()
+                if not success:
+                    failed_reads += 1
+                    if failed_reads == 1:
+                        self._log("摄像头读取帧失败，正在重试...")
+                    if failed_reads >= 10:
+                        raise RuntimeError("摄像头连续读取失败，已停止检测。")
+                    continue
+
+                failed_reads = 0
+                result = self.model.predict(
+                    source=frame,
+                    imgsz=self.imgsz.get(),
+                    conf=self.conf.get(),
+                    iou=self.iou.get(),
+                    max_det=self.max_det.get(),
+                    device=self.device.get().strip(),
+                    classes=classes,
+                    show=False,
+                    save=False,
+                    verbose=False,
+                )[0]
+                plotted = result.plot(labels=self.show_labels.get(), conf=self.show_conf.get())
+                rgb = cv2.cvtColor(plotted, cv2.COLOR_BGR2RGB)
+                self.root.after(0, lambda frm=rgb: self._display_frame(frm))
+        finally:
+            self._release_camera_capture()
+            self.root.after(0, self._on_camera_detection_stopped)
+
+    def _open_camera_capture(self, camera_index: int):
+        if os_name == "nt":
+            dshow_capture = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+            if dshow_capture.isOpened():
+                return dshow_capture
+            dshow_capture.release()
+        return cv2.VideoCapture(camera_index)
+
+    def _release_camera_capture(self):
+        if self.camera_capture is not None:
+            self.camera_capture.release()
+            self.camera_capture = None
 
     def _display_frame(self, frame_rgb):
         image = Image.fromarray(frame_rgb)
@@ -293,6 +324,7 @@ class GoatBehaviorDetectionApp:
 
     def _stop_camera_detection(self):
         self.is_running = False
+        self._release_camera_capture()
 
     def _on_detection_success(self, output_dir: Path):
         self.progress.stop()
