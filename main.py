@@ -40,6 +40,10 @@ class GoatBehaviorDetectionApp:
         self.camera_session = None
         self.current_video_capture = None
         self.video_job = None
+        self.video_paused = True
+        self.video_total_frames = 0
+        self.video_fps = 30
+        self.video_updating_slider = False
 
         self.preview_image = None
 
@@ -151,11 +155,33 @@ class GoatBehaviorDetectionApp:
         self.preview_label = ttk.Label(preview_frame, text="检测完成后显示结果图像/视频", anchor="center", relief="solid", background="#e2e8f0")
         self.preview_label.grid(row=1, column=0, sticky="nsew", pady=(8, 12))
 
+        self.video_control_frame = ttk.Frame(preview_frame, style="Card.TFrame")
+        self.video_control_frame.grid(row=2, column=0, sticky="ew", pady=(0, 10))
+        self.video_control_frame.columnconfigure(1, weight=1)
+        self.video_control_frame.grid_remove()
+
+        self.play_pause_button = ttk.Button(
+            self.video_control_frame,
+            text="开始",
+            command=self._toggle_video_play_pause,
+            state="disabled",
+        )
+        self.play_pause_button.grid(row=0, column=0, padx=(0, 8))
+        self.video_progress = ttk.Scale(
+            self.video_control_frame,
+            from_=0,
+            to=100,
+            orient="horizontal",
+            command=self._on_video_seek,
+        )
+        self.video_progress.grid(row=0, column=1, sticky="ew")
+        self.video_progress.configure(state="disabled")
+
         ttk.Label(preview_frame, text="运行日志", style="Section.TLabel").grid(
-            row=2, column=0, sticky="w"
+            row=3, column=0, sticky="w"
         )
         self.log_text = tk.Text(preview_frame, height=10, wrap="word")
-        self.log_text.grid(row=3, column=0, sticky="nsew", pady=(6, 0))
+        self.log_text.grid(row=4, column=0, sticky="nsew", pady=(6, 0))
         self._toggle_source_mode()
 
     def _add_setting_row(self, parent, label_text, variable, row):
@@ -183,6 +209,7 @@ class GoatBehaviorDetectionApp:
         return [int(x.strip()) for x in raw.split(",") if x.strip()]
 
     def _start_detection(self):
+        self._stop_video_preview(reset_controls=True)
         if self.source_mode.get() == "文件" and not self.source_path.get().strip():
             messagebox.showwarning("缺少输入", "请先选择图片或视频文件。")
             return
@@ -300,6 +327,7 @@ class GoatBehaviorDetectionApp:
         return max(candidates, key=lambda p: p.stat().st_mtime)
 
     def _update_preview(self, image_path: Path):
+        self._stop_video_preview(reset_controls=True)
         image = Image.open(image_path)
         image.thumbnail((680, 500))
         self.preview_image = ImageTk.PhotoImage(image)
@@ -314,32 +342,85 @@ class GoatBehaviorDetectionApp:
         self.source_entry.configure(state="normal" if is_file else "disabled")
         self.choose_file_btn.configure(state="normal" if is_file else "disabled")
         self.camera_entry.configure(state="disabled" if is_file else "normal")
+        if not is_file:
+            self._stop_video_preview(reset_controls=True)
 
     def _play_video_preview(self, video_path: Path):
-        if self.current_video_capture is not None:
-            self.current_video_capture.release()
-        if self.video_job:
-            self.root.after_cancel(self.video_job)
-
+        self._stop_video_preview(reset_controls=False)
         self.current_video_capture = cv2.VideoCapture(str(video_path))
         if not self.current_video_capture.isOpened():
             self.preview_label.configure(text="视频预览打开失败，请在输出目录查看。", image="")
             return
+
+        self.video_total_frames = int(self.current_video_capture.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        self.video_fps = self.current_video_capture.get(cv2.CAP_PROP_FPS) or 30
+        if self.video_fps <= 0:
+            self.video_fps = 30
+
+        self.video_updating_slider = True
+        self.video_progress.configure(to=max(self.video_total_frames - 1, 1), state="normal")
+        self.video_progress.set(0)
+        self.video_updating_slider = False
+
+        self.video_paused = True
+        self.play_pause_button.configure(text="开始", state="normal")
+        self.video_control_frame.grid()
         self._read_video_frame()
 
-    def _read_video_frame(self):
+    def _stop_video_preview(self, reset_controls: bool):
+        if self.video_job:
+            self.root.after_cancel(self.video_job)
+            self.video_job = None
+        if self.current_video_capture is not None:
+            self.current_video_capture.release()
+            self.current_video_capture = None
+        self.video_paused = True
+        if reset_controls:
+            self.video_control_frame.grid_remove()
+            self.play_pause_button.configure(text="开始", state="disabled")
+            self.video_progress.configure(state="disabled", to=100)
+            self.video_progress.set(0)
+
+    def _toggle_video_play_pause(self):
+        if self.current_video_capture is None:
+            return
+        self.video_paused = not self.video_paused
+        self.play_pause_button.configure(text="暂停" if not self.video_paused else "开始")
+        if not self.video_paused:
+            self._schedule_next_video_frame()
+
+    def _schedule_next_video_frame(self):
+        if self.video_paused or self.current_video_capture is None:
+            return
+        delay = max(int(1000 / self.video_fps), 1)
+        self.video_job = self.root.after(delay, self._read_video_frame)
+
+    def _on_video_seek(self, value):
+        if self.current_video_capture is None or self.video_updating_slider:
+            return
+        frame_index = int(float(value))
+        self.current_video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+        self._read_video_frame(seek_only=self.video_paused)
+
+    def _read_video_frame(self, seek_only: bool = False):
         if self.current_video_capture is None:
             return
         success, frame = self.current_video_capture.read()
         if not success:
-            self.current_video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            success, frame = self.current_video_capture.read()
-            if not success:
-                return
+            self.video_paused = True
+            self.play_pause_button.configure(text="开始")
+            self.video_job = None
+            return
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self._display_frame(rgb)
-        self.video_job = self.root.after(33, self._read_video_frame)
+        current_frame = int(self.current_video_capture.get(cv2.CAP_PROP_POS_FRAMES))
+        self.video_updating_slider = True
+        self.video_progress.set(current_frame)
+        self.video_updating_slider = False
+        self.video_job = None
+        if not seek_only:
+            self._schedule_next_video_frame()
 
 
 if __name__ == "__main__":
