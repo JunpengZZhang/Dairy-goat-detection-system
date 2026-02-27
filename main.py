@@ -54,7 +54,7 @@ class GoatBehaviorDetectionApp:
         self._build_layout()
 
     def _force_stand_label(self):
-        """将所有类别名称统一覆盖为 stand。"""
+        """将所有类别名称统一覆盖为 stand。."""
         names = self.model.names
         if isinstance(names, dict):
             forced_names = {cls_id: "stand" for cls_id in names}
@@ -133,13 +133,11 @@ class GoatBehaviorDetectionApp:
         title = ttk.Label(control_frame, text="奶山羊行为检测", style="Title.TLabel")
         title.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
 
-        ttk.Label(control_frame, text="智能识别", style="Badge.TLabel").grid(
-            row=0, column=2, sticky="e", pady=(0, 12)
-        )
+        ttk.Label(control_frame, text="智能识别", style="Badge.TLabel").grid(row=0, column=2, sticky="e", pady=(0, 12))
 
-        ttk.Label(control_frame, text="模型：YOLO11和ELSLowFast-LSTM · 支持图片/视频/摄像头实时检测", style="Subtle.TLabel").grid(
-            row=1, column=0, columnspan=3, sticky="w", pady=(0, 10)
-        )
+        ttk.Label(
+            control_frame, text="模型：YOLO11和ELSLowFast-LSTM · 支持图片/视频/摄像头实时检测", style="Subtle.TLabel"
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 10))
 
         ttk.Label(control_frame, text="输入模式：").grid(row=2, column=0, sticky="w", pady=5)
         mode_box = ttk.Combobox(
