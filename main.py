@@ -60,7 +60,9 @@ class GoatBehaviorDetectionApp:
         style.configure("Section.TLabel", background="#ffffff", font=("Microsoft YaHei UI", 12, "bold"))
         style.configure("Subtle.TLabel", background="#ffffff", foreground="#64748b")
         style.configure("TLabelframe", background="#ffffff", borderwidth=0)
-        style.configure("TLabelframe.Label", background="#ffffff", foreground="#334155", font=("Microsoft YaHei UI", 10, "bold"))
+        style.configure(
+            "TLabelframe.Label", background="#ffffff", foreground="#334155", font=("Microsoft YaHei UI", 10, "bold")
+        )
         style.configure("TButton", padding=8)
         style.configure("Primary.TButton", foreground="#ffffff", background="#2563eb")
         style.map("Primary.TButton", background=[("active", "#1d4ed8"), ("disabled", "#94a3b8")])
@@ -87,7 +89,9 @@ class GoatBehaviorDetectionApp:
         )
 
         ttk.Label(control_frame, text="输入模式：").grid(row=2, column=0, sticky="w", pady=5)
-        mode_box = ttk.Combobox(control_frame, textvariable=self.source_mode, values=["文件", "摄像头"], state="readonly")
+        mode_box = ttk.Combobox(
+            control_frame, textvariable=self.source_mode, values=["文件", "摄像头"], state="readonly"
+        )
         mode_box.grid(row=2, column=1, sticky="ew", pady=5)
         mode_box.bind("<<ComboboxSelected>>", lambda _: self._toggle_source_mode())
         ttk.Label(control_frame, text="").grid(row=2, column=2)
@@ -96,9 +100,7 @@ class GoatBehaviorDetectionApp:
         self.source_entry = ttk.Entry(control_frame, textvariable=self.source_path)
         self.source_entry.grid(row=3, column=1, sticky="ew", pady=5)
         self.choose_file_btn = ttk.Button(control_frame, text="选择文件", command=self._choose_source)
-        self.choose_file_btn.grid(
-            row=3, column=2, padx=(8, 0), pady=5
-        )
+        self.choose_file_btn.grid(row=3, column=2, padx=(8, 0), pady=5)
 
         ttk.Label(control_frame, text="摄像头编号：").grid(row=4, column=0, sticky="w", pady=5)
         self.camera_entry = ttk.Entry(control_frame, textvariable=self.camera_index)
@@ -141,18 +143,22 @@ class GoatBehaviorDetectionApp:
         action_frame.columnconfigure(0, weight=1)
         action_frame.columnconfigure(1, weight=1)
 
-        self.run_button = ttk.Button(action_frame, text="开始检测", style="Primary.TButton", command=self._start_detection)
+        self.run_button = ttk.Button(
+            action_frame, text="开始检测", style="Primary.TButton", command=self._start_detection
+        )
         self.run_button.grid(row=0, column=0, sticky="ew", padx=(0, 6))
-        self.stop_button = ttk.Button(action_frame, text="停止摄像头检测", command=self._stop_camera_detection, state="disabled")
+        self.stop_button = ttk.Button(
+            action_frame, text="停止摄像头检测", command=self._stop_camera_detection, state="disabled"
+        )
         self.stop_button.grid(row=0, column=1, sticky="ew", padx=(6, 0))
 
         self.progress = ttk.Progressbar(control_frame, mode="indeterminate")
         self.progress.grid(row=10, column=0, columnspan=3, sticky="ew", pady=(10, 0))
 
-        ttk.Label(preview_frame, text="结果预览", style="Section.TLabel").grid(
-            row=0, column=0, sticky="w"
+        ttk.Label(preview_frame, text="结果预览", style="Section.TLabel").grid(row=0, column=0, sticky="w")
+        self.preview_label = ttk.Label(
+            preview_frame, text="检测完成后显示结果图像/视频", anchor="center", relief="solid", background="#e2e8f0"
         )
-        self.preview_label = ttk.Label(preview_frame, text="检测完成后显示结果图像/视频", anchor="center", relief="solid", background="#e2e8f0")
         self.preview_label.grid(row=1, column=0, sticky="nsew", pady=(8, 12))
 
         self.video_control_frame = ttk.Frame(preview_frame, style="Card.TFrame")
@@ -177,9 +183,7 @@ class GoatBehaviorDetectionApp:
         self.video_progress.grid(row=0, column=1, sticky="ew")
         self.video_progress.configure(state="disabled")
 
-        ttk.Label(preview_frame, text="运行日志", style="Section.TLabel").grid(
-            row=3, column=0, sticky="w"
-        )
+        ttk.Label(preview_frame, text="运行日志", style="Section.TLabel").grid(row=3, column=0, sticky="w")
         self.log_text = tk.Text(preview_frame, height=10, wrap="word")
         self.log_text.grid(row=4, column=0, sticky="nsew", pady=(6, 0))
         self._toggle_source_mode()
@@ -252,7 +256,7 @@ class GoatBehaviorDetectionApp:
 
             output_path = Path(results[0].save_dir)
             self.root.after(0, lambda: self._on_detection_success(output_path))
-        except Exception as exc:
+        except Exception:
             self.root.after(0, lambda: self._on_detection_error(exc))
 
     def _run_camera_detection(self, classes):
