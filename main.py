@@ -18,7 +18,7 @@ class GoatBehaviorDetectionApp:
         self.root.title("奶山羊行为检测系统（YOLO11n）")
         self.root.geometry("1260x800")
         self.root.minsize(1020, 700)
-        self.root.configure(bg="#f1f5f9")
+        self.root.configure(bg="#eef3ee")
 
         self.model = YOLO("yolo11n.pt")
         self.source_mode = tk.StringVar(value="文件")
@@ -55,30 +55,30 @@ class GoatBehaviorDetectionApp:
     def _setup_styles(self):
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("TFrame", background="#0f172a")
-        style.configure("Card.TFrame", background="#ffffff")
-        style.configure("TLabel", background="#ffffff", foreground="#0f172a", font=("Microsoft YaHei UI", 10))
-        style.configure("Title.TLabel", background="#ffffff", foreground="#0f172a", font=("Microsoft YaHei UI", 20, "bold"))
-        style.configure("Badge.TLabel", background="#1d4ed8", foreground="#eff6ff", font=("Microsoft YaHei UI", 9, "bold"), padding=(10, 4))
-        style.configure("Section.TLabel", background="#ffffff", foreground="#0f172a", font=("Microsoft YaHei UI", 12, "bold"))
-        style.configure("Subtle.TLabel", background="#ffffff", foreground="#64748b", font=("Microsoft YaHei UI", 9))
-        style.configure("TLabelframe", background="#ffffff", borderwidth=0)
+        style.configure("TFrame", background="#e6ede8")
+        style.configure("Card.TFrame", background="#fcfdfb")
+        style.configure("TLabel", background="#fcfdfb", foreground="#1f2933", font=("Microsoft YaHei UI", 10))
+        style.configure("Title.TLabel", background="#fcfdfb", foreground="#1d3a2f", font=("Microsoft YaHei UI", 20, "bold"))
+        style.configure("Badge.TLabel", background="#4d7c0f", foreground="#f7fee7", font=("Microsoft YaHei UI", 9, "bold"), padding=(10, 4))
+        style.configure("Section.TLabel", background="#fcfdfb", foreground="#1d3a2f", font=("Microsoft YaHei UI", 12, "bold"))
+        style.configure("Subtle.TLabel", background="#fcfdfb", foreground="#5f6b66", font=("Microsoft YaHei UI", 9))
+        style.configure("TLabelframe", background="#fcfdfb", borderwidth=0)
         style.configure(
             "TLabelframe.Label",
-            background="#ffffff",
-            foreground="#334155",
+            background="#fcfdfb",
+            foreground="#3d4d45",
             font=("Microsoft YaHei UI", 10, "bold"),
         )
-        style.configure("TEntry", fieldbackground="#f8fafc", bordercolor="#cbd5e1", lightcolor="#cbd5e1", darkcolor="#cbd5e1")
-        style.map("TEntry", bordercolor=[("focus", "#2563eb")], lightcolor=[("focus", "#2563eb")], darkcolor=[("focus", "#2563eb")])
-        style.configure("TCombobox", fieldbackground="#f8fafc", bordercolor="#cbd5e1")
-        style.map("TCombobox", bordercolor=[("focus", "#2563eb")])
+        style.configure("TEntry", fieldbackground="#f7faf6", bordercolor="#c8d4cb", lightcolor="#c8d4cb", darkcolor="#c8d4cb")
+        style.map("TEntry", bordercolor=[("focus", "#4d7c0f")], lightcolor=[("focus", "#4d7c0f")], darkcolor=[("focus", "#4d7c0f")])
+        style.configure("TCombobox", fieldbackground="#f7faf6", bordercolor="#c8d4cb")
+        style.map("TCombobox", bordercolor=[("focus", "#4d7c0f")])
         style.configure("TButton", padding=9, font=("Microsoft YaHei UI", 10, "bold"))
-        style.configure("Primary.TButton", foreground="#ffffff", background="#2563eb")
-        style.map("Primary.TButton", background=[("active", "#1d4ed8"), ("disabled", "#94a3b8")])
-        style.configure("Secondary.TButton", foreground="#334155", background="#e2e8f0")
-        style.map("Secondary.TButton", background=[("active", "#cbd5e1"), ("disabled", "#f1f5f9")])
-        style.configure("Accent.Horizontal.TProgressbar", troughcolor="#e2e8f0", background="#2563eb", bordercolor="#e2e8f0")
+        style.configure("Primary.TButton", foreground="#ffffff", background="#4d7c0f")
+        style.map("Primary.TButton", background=[("active", "#3f6212"), ("disabled", "#a8b3a6")])
+        style.configure("Secondary.TButton", foreground="#3d4d45", background="#e4ece3")
+        style.map("Secondary.TButton", background=[("active", "#d3ddd2"), ("disabled", "#eef3ee")])
+        style.configure("Accent.Horizontal.TProgressbar", troughcolor="#dde8dd", background="#4d7c0f", bordercolor="#dde8dd")
 
     def _build_layout(self):
         self.root.columnconfigure(0, weight=2)
@@ -185,8 +185,8 @@ class GoatBehaviorDetectionApp:
             text="检测完成后显示结果图像/视频",
             anchor="center",
             relief="flat",
-            background="#f1f5f9",
-            foreground="#64748b",
+            background="#eef3ee",
+            foreground="#607269",
             padding=18,
         )
         self.preview_label.grid(row=1, column=0, sticky="nsew", pady=(8, 12))
@@ -221,9 +221,9 @@ class GoatBehaviorDetectionApp:
             preview_frame,
             height=10,
             wrap="word",
-            bg="#0b1120",
-            fg="#e2e8f0",
-            insertbackground="#e2e8f0",
+            bg="#1c2a24",
+            fg="#e7efe9",
+            insertbackground="#e7efe9",
             relief="flat",
             padx=12,
             pady=10,
