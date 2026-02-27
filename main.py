@@ -15,8 +15,8 @@ class GoatBehaviorDetectionApp:
 
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("奶山羊行为检测系统（YOLO11n）")
-        self.root.geometry("1260x800")
+        self.root.title("奶山羊行为检测系统")
+        self.root.geometry("1260x780")
         self.root.minsize(1020, 700)
         self.root.configure(bg="#f3f6fb")
 
@@ -121,11 +121,11 @@ class GoatBehaviorDetectionApp:
         title = ttk.Label(control_frame, text="奶山羊行为检测", style="Title.TLabel")
         title.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
 
-        ttk.Label(control_frame, text="YOLO11n 智能识别", style="Badge.TLabel").grid(
+        ttk.Label(control_frame, text="智能识别", style="Badge.TLabel").grid(
             row=0, column=2, sticky="e", pady=(0, 12)
         )
 
-        ttk.Label(control_frame, text="模型：YOLO11n · 支持图片/视频/摄像头实时检测", style="Subtle.TLabel").grid(
+        ttk.Label(control_frame, text="模型：YOLO11和ELSLowFast-LSTM · 支持图片/视频/摄像头实时检测", style="Subtle.TLabel").grid(
             row=1, column=0, columnspan=3, sticky="w", pady=(0, 10)
         )
 
