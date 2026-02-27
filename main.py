@@ -58,9 +58,19 @@ class GoatBehaviorDetectionApp:
         style.configure("TFrame", background="#e6ede8")
         style.configure("Card.TFrame", background="#fcfdfb")
         style.configure("TLabel", background="#fcfdfb", foreground="#1f2933", font=("Microsoft YaHei UI", 10))
-        style.configure("Title.TLabel", background="#fcfdfb", foreground="#1d3a2f", font=("Microsoft YaHei UI", 20, "bold"))
-        style.configure("Badge.TLabel", background="#4d7c0f", foreground="#f7fee7", font=("Microsoft YaHei UI", 9, "bold"), padding=(10, 4))
-        style.configure("Section.TLabel", background="#fcfdfb", foreground="#1d3a2f", font=("Microsoft YaHei UI", 12, "bold"))
+        style.configure(
+            "Title.TLabel", background="#fcfdfb", foreground="#1d3a2f", font=("Microsoft YaHei UI", 20, "bold")
+        )
+        style.configure(
+            "Badge.TLabel",
+            background="#4d7c0f",
+            foreground="#f7fee7",
+            font=("Microsoft YaHei UI", 9, "bold"),
+            padding=(10, 4),
+        )
+        style.configure(
+            "Section.TLabel", background="#fcfdfb", foreground="#1d3a2f", font=("Microsoft YaHei UI", 12, "bold")
+        )
         style.configure("Subtle.TLabel", background="#fcfdfb", foreground="#5f6b66", font=("Microsoft YaHei UI", 9))
         style.configure("TLabelframe", background="#fcfdfb", borderwidth=0)
         style.configure("TFrame", background="#0f172a")
@@ -87,8 +97,15 @@ class GoatBehaviorDetectionApp:
             foreground="#3d4d45",
             font=("Microsoft YaHei UI", 10, "bold"),
         )
-        style.configure("TEntry", fieldbackground="#f7faf6", bordercolor="#c8d4cb", lightcolor="#c8d4cb", darkcolor="#c8d4cb")
-        style.map("TEntry", bordercolor=[("focus", "#4d7c0f")], lightcolor=[("focus", "#4d7c0f")], darkcolor=[("focus", "#4d7c0f")])
+        style.configure(
+            "TEntry", fieldbackground="#f7faf6", bordercolor="#c8d4cb", lightcolor="#c8d4cb", darkcolor="#c8d4cb"
+        )
+        style.map(
+            "TEntry",
+            bordercolor=[("focus", "#4d7c0f")],
+            lightcolor=[("focus", "#4d7c0f")],
+            darkcolor=[("focus", "#4d7c0f")],
+        )
         style.configure("TCombobox", fieldbackground="#f7faf6", bordercolor="#c8d4cb")
         style.map("TCombobox", bordercolor=[("focus", "#4d7c0f")])
         style.configure("TButton", padding=9, font=("Microsoft YaHei UI", 10, "bold"))
@@ -96,7 +113,9 @@ class GoatBehaviorDetectionApp:
         style.map("Primary.TButton", background=[("active", "#3f6212"), ("disabled", "#a8b3a6")])
         style.configure("Secondary.TButton", foreground="#3d4d45", background="#e4ece3")
         style.map("Secondary.TButton", background=[("active", "#d3ddd2"), ("disabled", "#eef3ee")])
-        style.configure("Accent.Horizontal.TProgressbar", troughcolor="#dde8dd", background="#4d7c0f", bordercolor="#dde8dd")
+        style.configure(
+            "Accent.Horizontal.TProgressbar", troughcolor="#dde8dd", background="#4d7c0f", bordercolor="#dde8dd"
+        )
         style.configure(
             "TEntry", fieldbackground="#f8fafc", bordercolor="#cbd5e1", lightcolor="#cbd5e1", darkcolor="#cbd5e1"
         )
