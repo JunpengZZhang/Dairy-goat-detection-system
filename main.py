@@ -1,14 +1,15 @@
+import tkinter as tk
 from pathlib import Path
 from threading import Thread
-import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from PIL import Image, ImageTk
+
 from ultralytics import YOLO
 
 
 class GoatBehaviorDetectionApp:
-    """奶山羊行为检测桌面界面。"""
+    """奶山羊行为检测桌面界面。."""
 
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -55,11 +56,15 @@ class GoatBehaviorDetectionApp:
 
         ttk.Label(control_frame, text="输入源：").grid(row=1, column=0, sticky="w", pady=5)
         ttk.Entry(control_frame, textvariable=self.source_path).grid(row=1, column=1, sticky="ew", pady=5)
-        ttk.Button(control_frame, text="选择文件", command=self._choose_source).grid(row=1, column=2, padx=(8, 0), pady=5)
+        ttk.Button(control_frame, text="选择文件", command=self._choose_source).grid(
+            row=1, column=2, padx=(8, 0), pady=5
+        )
 
         ttk.Label(control_frame, text="输出目录：").grid(row=2, column=0, sticky="w", pady=5)
         ttk.Entry(control_frame, textvariable=self.output_root).grid(row=2, column=1, sticky="ew", pady=5)
-        ttk.Button(control_frame, text="选择目录", command=self._choose_output).grid(row=2, column=2, padx=(8, 0), pady=5)
+        ttk.Button(control_frame, text="选择目录", command=self._choose_output).grid(
+            row=2, column=2, padx=(8, 0), pady=5
+        )
 
         ttk.Label(control_frame, text="运行名称：").grid(row=3, column=0, sticky="w", pady=5)
         ttk.Entry(control_frame, textvariable=self.run_name).grid(row=3, column=1, sticky="ew", pady=5)
@@ -78,9 +83,13 @@ class GoatBehaviorDetectionApp:
         options = ttk.LabelFrame(control_frame, text="保存与显示选项", padding=10)
         options.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(12, 0))
 
-        ttk.Checkbutton(options, text="保存 txt 标注", variable=self.save_txt).grid(row=0, column=0, sticky="w", padx=(0, 15), pady=4)
+        ttk.Checkbutton(options, text="保存 txt 标注", variable=self.save_txt).grid(
+            row=0, column=0, sticky="w", padx=(0, 15), pady=4
+        )
         ttk.Checkbutton(options, text="txt 含 conf", variable=self.save_conf).grid(row=0, column=1, sticky="w", pady=4)
-        ttk.Checkbutton(options, text="显示标签", variable=self.show_labels).grid(row=1, column=0, sticky="w", padx=(0, 15), pady=4)
+        ttk.Checkbutton(options, text="显示标签", variable=self.show_labels).grid(
+            row=1, column=0, sticky="w", padx=(0, 15), pady=4
+        )
         ttk.Checkbutton(options, text="显示置信度", variable=self.show_conf).grid(row=1, column=1, sticky="w", pady=4)
 
         self.run_button = ttk.Button(control_frame, text="开始检测", command=self._start_detection)
@@ -89,11 +98,15 @@ class GoatBehaviorDetectionApp:
         self.progress = ttk.Progressbar(control_frame, mode="indeterminate")
         self.progress.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(10, 0))
 
-        ttk.Label(preview_frame, text="结果预览", font=("Microsoft YaHei UI", 13, "bold")).grid(row=0, column=0, sticky="w")
+        ttk.Label(preview_frame, text="结果预览", font=("Microsoft YaHei UI", 13, "bold")).grid(
+            row=0, column=0, sticky="w"
+        )
         self.preview_label = ttk.Label(preview_frame, text="检测完成后显示结果图像", anchor="center", relief="solid")
         self.preview_label.grid(row=1, column=0, sticky="nsew", pady=(8, 12))
 
-        ttk.Label(preview_frame, text="运行日志", font=("Microsoft YaHei UI", 12, "bold")).grid(row=2, column=0, sticky="w")
+        ttk.Label(preview_frame, text="运行日志", font=("Microsoft YaHei UI", 12, "bold")).grid(
+            row=2, column=0, sticky="w"
+        )
         self.log_text = tk.Text(preview_frame, height=10, wrap="word")
         self.log_text.grid(row=3, column=0, sticky="nsew", pady=(6, 0))
 
@@ -158,7 +171,7 @@ class GoatBehaviorDetectionApp:
 
             output_path = Path(results[0].save_dir)
             self.root.after(0, lambda: self._on_detection_success(output_path))
-        except Exception as exc:
+        except Exception:
             self.root.after(0, lambda: self._on_detection_error(exc))
 
     def _on_detection_success(self, output_dir: Path):
