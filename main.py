@@ -62,6 +62,7 @@ class GoatBehaviorDetectionApp:
             forced_names = {idx: "stand" for idx, _ in enumerate(names)}
 
         self.model.model.names = forced_names
+        self.model.names = forced_names
 
     def _setup_styles(self):
         style = ttk.Style()
