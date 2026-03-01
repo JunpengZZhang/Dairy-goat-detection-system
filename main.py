@@ -1,8 +1,8 @@
+import shutil
 import tkinter as tk
 from datetime import datetime
 from os import name as os_name
 from pathlib import Path
-import shutil
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 
@@ -137,13 +137,11 @@ class GoatBehaviorDetectionApp:
         title = ttk.Label(control_frame, text="奶山羊行为检测", style="Title.TLabel")
         title.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
 
-        ttk.Label(control_frame, text="智能识别", style="Badge.TLabel").grid(
-            row=0, column=2, sticky="e", pady=(0, 12)
-        )
+        ttk.Label(control_frame, text="智能识别", style="Badge.TLabel").grid(row=0, column=2, sticky="e", pady=(0, 12))
 
-        ttk.Label(control_frame, text="模型：YOLO11和ELSLowFast-LSTM · 支持图片/视频/摄像头实时检测", style="Subtle.TLabel").grid(
-            row=1, column=0, columnspan=3, sticky="w", pady=(0, 10)
-        )
+        ttk.Label(
+            control_frame, text="模型：YOLO11和ELSLowFast-LSTM · 支持图片/视频/摄像头实时检测", style="Subtle.TLabel"
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 10))
 
         ttk.Label(control_frame, text="输入模式：").grid(row=2, column=0, sticky="w", pady=5)
         mode_box = ttk.Combobox(
@@ -174,7 +172,9 @@ class GoatBehaviorDetectionApp:
 
         ttk.Label(control_frame, text="数据目录：").grid(row=7, column=0, sticky="w", pady=5)
         ttk.Entry(control_frame, textvariable=self.data_root).grid(row=7, column=1, sticky="ew", pady=5)
-        ttk.Button(control_frame, text="管理数据", command=self._open_data_manager).grid(row=7, column=2, padx=(8, 0), pady=5)
+        ttk.Button(control_frame, text="管理数据", command=self._open_data_manager).grid(
+            row=7, column=2, padx=(8, 0), pady=5
+        )
 
         settings = ttk.LabelFrame(control_frame, text="检测参数", padding=10)
         settings.grid(row=8, column=0, columnspan=3, sticky="ew", pady=(12, 0))
@@ -377,7 +377,10 @@ class GoatBehaviorDetectionApp:
         data_root = self._ensure_data_root()
         selected_files = filedialog.askopenfilenames(
             title="选择要导入的数据文件",
-            filetypes=[("媒体和标注", "*.jpg *.jpeg *.png *.bmp *.mp4 *.avi *.mov *.mkv *.txt *.json *.yaml *.yml"), ("所有文件", "*.*")],
+            filetypes=[
+                ("媒体和标注", "*.jpg *.jpeg *.png *.bmp *.mp4 *.avi *.mov *.mkv *.txt *.json *.yaml *.yml"),
+                ("所有文件", "*.*"),
+            ],
         )
         if not selected_files:
             return
@@ -482,7 +485,7 @@ class GoatBehaviorDetectionApp:
 
             output_path = Path(results[0].save_dir)
             self.root.after(0, lambda: self._on_detection_success(output_path))
-        except Exception as exc:
+        except Exception:
             self.root.after(0, lambda: self._on_detection_error(exc))
 
     def _run_camera_detection(self, classes):
