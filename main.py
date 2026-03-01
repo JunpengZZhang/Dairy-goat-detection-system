@@ -124,13 +124,11 @@ class GoatBehaviorDetectionApp:
         title = ttk.Label(control_frame, text="奶山羊行为检测", style="Title.TLabel")
         title.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
 
-        ttk.Label(control_frame, text="智能识别", style="Badge.TLabel").grid(
-            row=0, column=2, sticky="e", pady=(0, 12)
-        )
+        ttk.Label(control_frame, text="智能识别", style="Badge.TLabel").grid(row=0, column=2, sticky="e", pady=(0, 12))
 
-        ttk.Label(control_frame, text="模型：YOLO11和ELSLowFast-LSTM · 支持图片/视频/摄像头实时检测", style="Subtle.TLabel").grid(
-            row=1, column=0, columnspan=3, sticky="w", pady=(0, 10)
-        )
+        ttk.Label(
+            control_frame, text="模型：YOLO11和ELSLowFast-LSTM · 支持图片/视频/摄像头实时检测", style="Subtle.TLabel"
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 10))
 
         ttk.Label(control_frame, text="输入模式：").grid(row=2, column=0, sticky="w", pady=5)
         mode_box = ttk.Combobox(
@@ -253,7 +251,9 @@ class GoatBehaviorDetectionApp:
         )
         self.log_text.grid(row=4, column=0, sticky="nsew", pady=(6, 0))
 
-        ttk.Label(preview_frame, text="检测摘要", style="Section.TLabel").grid(row=5, column=0, sticky="w", pady=(10, 0))
+        ttk.Label(preview_frame, text="检测摘要", style="Section.TLabel").grid(
+            row=5, column=0, sticky="w", pady=(10, 0)
+        )
         self.summary_text = tk.Text(
             preview_frame,
             height=7,
@@ -346,7 +346,7 @@ class GoatBehaviorDetectionApp:
 
             output_path = Path(results[0].save_dir)
             self.root.after(0, lambda: self._on_detection_success(output_path, summary))
-        except Exception as exc:
+        except Exception:
             self.root.after(0, lambda: self._on_detection_error(exc))
 
     def _run_camera_detection(self, classes):
