@@ -1,7 +1,9 @@
 import tkinter as tk
+from collections import Counter
 from os import name as os_name
 from pathlib import Path
 from threading import Thread
+from time import perf_counter
 from tkinter import filedialog, messagebox, ttk
 
 import cv2
@@ -46,6 +48,7 @@ class GoatBehaviorDetectionApp:
         self.video_total_frames = 0
         self.video_fps = 30
         self.video_updating_slider = False
+        self.last_summary = ""
 
         self.preview_image = None
 
@@ -249,6 +252,26 @@ class GoatBehaviorDetectionApp:
             font=("Consolas", 10),
         )
         self.log_text.grid(row=4, column=0, sticky="nsew", pady=(6, 0))
+
+        ttk.Label(preview_frame, text="检测摘要", style="Section.TLabel").grid(row=5, column=0, sticky="w", pady=(10, 0))
+        self.summary_text = tk.Text(
+            preview_frame,
+            height=7,
+            wrap="word",
+            bg="#f8fafc",
+            fg="#0f172a",
+            insertbackground="#0f172a",
+            relief="flat",
+            padx=12,
+            pady=10,
+            font=("Consolas", 10),
+            state="disabled",
+        )
+        self.summary_text.grid(row=6, column=0, sticky="nsew", pady=(6, 0))
+
+        summary_actions = ttk.Frame(preview_frame, style="Card.TFrame")
+        summary_actions.grid(row=7, column=0, sticky="e", pady=(8, 0))
+        ttk.Button(summary_actions, text="复制摘要", style="Secondary.TButton", command=self._copy_summary).pack()
         self._toggle_source_mode()
 
     def _add_setting_row(self, parent, label_text, variable, row):
@@ -285,6 +308,7 @@ class GoatBehaviorDetectionApp:
         self.stop_button.configure(state="normal" if self.source_mode.get() == "摄像头" else "disabled")
         self.progress.start(10)
         self._log("开始检测，请稍候...")
+        self._set_summary("检测运行中，摘要将在检测结束后自动生成。")
         self.is_running = True
         Thread(target=self._run_detection, daemon=True).start()
 
@@ -298,6 +322,7 @@ class GoatBehaviorDetectionApp:
                 self._run_camera_detection(classes)
                 return
 
+            start_time = perf_counter()
             results = self.model.predict(
                 source=self.source_path.get().strip(),
                 imgsz=self.imgsz.get(),
@@ -316,10 +341,12 @@ class GoatBehaviorDetectionApp:
                 exist_ok=True,
                 verbose=False,
             )
+            elapsed = perf_counter() - start_time
+            summary = self._build_detection_summary(results, elapsed)
 
             output_path = Path(results[0].save_dir)
-            self.root.after(0, lambda: self._on_detection_success(output_path))
-        except Exception:
+            self.root.after(0, lambda: self._on_detection_success(output_path, summary))
+        except Exception as exc:
             self.root.after(0, lambda: self._on_detection_error(exc))
 
     def _run_camera_detection(self, classes):
@@ -385,18 +412,20 @@ class GoatBehaviorDetectionApp:
         self.is_running = False
         self.run_button.configure(state="normal")
         self.stop_button.configure(state="disabled")
+        self._set_summary("摄像头检测已停止。实时模式暂不生成自动统计摘要。")
         self._log("摄像头检测已停止。")
 
     def _stop_camera_detection(self):
         self.is_running = False
         self._release_camera_capture()
 
-    def _on_detection_success(self, output_dir: Path):
+    def _on_detection_success(self, output_dir: Path, summary: str):
         self.progress.stop()
         self.is_running = False
         self.run_button.configure(state="normal")
         self.stop_button.configure(state="disabled")
         self._log(f"检测完成，结果保存在：{output_dir}")
+        self._set_summary(summary)
 
         preview_file = self._find_preview_file(output_dir)
         if preview_file:
@@ -413,6 +442,7 @@ class GoatBehaviorDetectionApp:
         self.is_running = False
         self.run_button.configure(state="normal")
         self.stop_button.configure(state="disabled")
+        self._set_summary("检测失败，未生成摘要。\n请检查输入参数、模型路径和推理设备配置。")
         self._log(f"检测失败：{exc}")
         messagebox.showerror("检测失败", str(exc))
 
@@ -433,6 +463,55 @@ class GoatBehaviorDetectionApp:
     def _log(self, message: str):
         self.log_text.insert("end", f"{message}\n")
         self.log_text.see("end")
+
+    def _set_summary(self, summary: str):
+        self.last_summary = summary
+        self.summary_text.configure(state="normal")
+        self.summary_text.delete("1.0", "end")
+        self.summary_text.insert("1.0", summary)
+        self.summary_text.configure(state="disabled")
+
+    def _copy_summary(self):
+        if not self.last_summary:
+            messagebox.showinfo("无可复制内容", "请先运行一次检测以生成摘要。")
+            return
+        self.root.clipboard_clear()
+        self.root.clipboard_append(self.last_summary)
+        self._log("检测摘要已复制到剪贴板。")
+
+    def _build_detection_summary(self, results, elapsed_seconds: float):
+        if not results:
+            return "未获得检测结果。"
+
+        frame_count = len(results)
+        class_counter = Counter()
+        confidence_values = []
+
+        for result in results:
+            names = result.names
+            for box in result.boxes:
+                cls_id = int(box.cls.item())
+                class_name = names.get(cls_id, str(cls_id)) if isinstance(names, dict) else str(cls_id)
+                class_counter[class_name] += 1
+                confidence_values.append(float(box.conf.item()))
+
+        total_detections = sum(class_counter.values())
+        avg_conf = (sum(confidence_values) / len(confidence_values)) if confidence_values else 0.0
+        fps = frame_count / elapsed_seconds if elapsed_seconds > 0 else 0.0
+
+        class_lines = [f"- {name}: {count}" for name, count in class_counter.most_common()]
+        class_block = "\n".join(class_lines) if class_lines else "- 无目标"
+
+        return (
+            "=== 奶山羊行为检测摘要 ===\n"
+            f"处理帧数: {frame_count}\n"
+            f"总检测目标数: {total_detections}\n"
+            f"平均置信度: {avg_conf:.3f}\n"
+            f"总耗时: {elapsed_seconds:.2f} 秒\n"
+            f"处理速度: {fps:.2f} 帧/秒\n"
+            "类别统计:\n"
+            f"{class_block}"
+        )
 
     def _toggle_source_mode(self):
         is_file = self.source_mode.get() == "文件"
