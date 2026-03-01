@@ -20,8 +20,7 @@ class GoatBehaviorDetectionApp:
         self.root.minsize(1020, 700)
         self.root.configure(bg="#f3f6fb")
 
-        self.model = YOLO("yolo11n.pt")
-        self._force_stand_label()
+        self.model = YOLO("best.pt")
         self.source_mode = tk.StringVar(value="文件")
         self.source_path = tk.StringVar(value="")
         self.camera_index = tk.IntVar(value=0)
@@ -52,17 +51,6 @@ class GoatBehaviorDetectionApp:
 
         self._setup_styles()
         self._build_layout()
-
-    def _force_stand_label(self):
-        """将所有类别名称统一覆盖为 stand。"""
-        names = self.model.names
-        if isinstance(names, dict):
-            forced_names = {cls_id: "stand" for cls_id in names}
-        else:
-            forced_names = {idx: "stand" for idx, _ in enumerate(names)}
-
-        self.model.model.names = forced_names
-        self.model.names = forced_names
 
     def _setup_styles(self):
         style = ttk.Style()
