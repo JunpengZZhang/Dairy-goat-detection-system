@@ -1,6 +1,8 @@
 import tkinter as tk
+from datetime import datetime
 from os import name as os_name
 from pathlib import Path
+import shutil
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 
@@ -26,6 +28,7 @@ class GoatBehaviorDetectionApp:
         self.camera_index = tk.IntVar(value=0)
         self.output_root = tk.StringVar(value=str(Path.cwd() / "runs" / "goat_detect"))
         self.run_name = tk.StringVar(value="exp")
+        self.data_root = tk.StringVar(value=str(Path.cwd() / "data"))
 
         self.imgsz = tk.IntVar(value=640)
         self.conf = tk.DoubleVar(value=0.25)
@@ -48,6 +51,8 @@ class GoatBehaviorDetectionApp:
         self.video_updating_slider = False
 
         self.preview_image = None
+        self.data_manager_window = None
+        self.data_tree = None
 
         self._setup_styles()
         self._build_layout()
@@ -156,8 +161,12 @@ class GoatBehaviorDetectionApp:
         ttk.Label(control_frame, text="运行名称：").grid(row=6, column=0, sticky="w", pady=5)
         ttk.Entry(control_frame, textvariable=self.run_name).grid(row=6, column=1, sticky="ew", pady=5)
 
+        ttk.Label(control_frame, text="数据目录：").grid(row=7, column=0, sticky="w", pady=5)
+        ttk.Entry(control_frame, textvariable=self.data_root).grid(row=7, column=1, sticky="ew", pady=5)
+        ttk.Button(control_frame, text="管理数据", command=self._open_data_manager).grid(row=7, column=2, padx=(8, 0), pady=5)
+
         settings = ttk.LabelFrame(control_frame, text="检测参数", padding=10)
-        settings.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(12, 0))
+        settings.grid(row=8, column=0, columnspan=3, sticky="ew", pady=(12, 0))
         settings.columnconfigure(1, weight=1)
 
         self._add_setting_row(settings, "图像尺寸 imgsz", self.imgsz, 0)
@@ -168,7 +177,7 @@ class GoatBehaviorDetectionApp:
         self._add_setting_row(settings, "类别 classes(逗号分隔)", self.classes, 5)
 
         options = ttk.LabelFrame(control_frame, text="保存与显示选项", padding=10)
-        options.grid(row=8, column=0, columnspan=3, sticky="ew", pady=(12, 0))
+        options.grid(row=9, column=0, columnspan=3, sticky="ew", pady=(12, 0))
 
         ttk.Checkbutton(options, text="保存 txt 标注", variable=self.save_txt).grid(
             row=0, column=0, sticky="w", padx=(0, 15), pady=4
@@ -180,7 +189,7 @@ class GoatBehaviorDetectionApp:
         ttk.Checkbutton(options, text="显示置信度", variable=self.show_conf).grid(row=1, column=1, sticky="w", pady=4)
 
         action_frame = ttk.Frame(control_frame, style="Card.TFrame")
-        action_frame.grid(row=9, column=0, columnspan=3, sticky="ew", pady=(14, 0))
+        action_frame.grid(row=10, column=0, columnspan=3, sticky="ew", pady=(14, 0))
         action_frame.columnconfigure(0, weight=1)
         action_frame.columnconfigure(1, weight=1)
 
@@ -198,7 +207,7 @@ class GoatBehaviorDetectionApp:
         self.stop_button.grid(row=0, column=1, sticky="ew", padx=(6, 0))
 
         self.progress = ttk.Progressbar(control_frame, mode="indeterminate", style="Accent.Horizontal.TProgressbar")
-        self.progress.grid(row=10, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        self.progress.grid(row=11, column=0, columnspan=3, sticky="ew", pady=(10, 0))
 
         ttk.Label(preview_frame, text="结果预览", style="Section.TLabel").grid(row=0, column=0, sticky="w")
         self.preview_label = ttk.Label(
@@ -269,6 +278,149 @@ class GoatBehaviorDetectionApp:
         if selected:
             self.output_root.set(selected)
 
+    def _ensure_data_root(self):
+        data_root = Path(self.data_root.get()).expanduser().resolve()
+        data_root.mkdir(parents=True, exist_ok=True)
+        self.data_root.set(str(data_root))
+        return data_root
+
+    def _open_data_manager(self):
+        data_root = self._ensure_data_root()
+        if self.data_manager_window and self.data_manager_window.winfo_exists():
+            self.data_manager_window.lift()
+            self._refresh_data_tree()
+            return
+
+        manager = tk.Toplevel(self.root)
+        manager.title("数据管理")
+        manager.geometry("860x500")
+        manager.minsize(760, 420)
+        manager.configure(bg="#f3f6fb")
+        manager.columnconfigure(0, weight=1)
+        manager.rowconfigure(2, weight=1)
+        self.data_manager_window = manager
+
+        ttk.Label(manager, text=f"当前数据目录：{data_root}", style="Subtle.TLabel").grid(
+            row=0, column=0, sticky="w", padx=14, pady=(14, 6)
+        )
+
+        toolbar = ttk.Frame(manager, padding=(14, 4), style="TFrame")
+        toolbar.grid(row=1, column=0, sticky="ew")
+        ttk.Button(toolbar, text="导入文件", command=self._import_data_files).pack(side="left")
+        ttk.Button(toolbar, text="删除选中", command=self._delete_selected_data).pack(side="left", padx=8)
+        ttk.Button(toolbar, text="设为输入源", command=self._set_selected_as_input).pack(side="left")
+        ttk.Button(toolbar, text="刷新", command=self._refresh_data_tree).pack(side="right")
+
+        table_shell = ttk.Frame(manager, padding=(14, 0, 14, 14), style="TFrame")
+        table_shell.grid(row=2, column=0, sticky="nsew")
+        table_shell.columnconfigure(0, weight=1)
+        table_shell.rowconfigure(0, weight=1)
+
+        columns = ("name", "type", "size", "updated")
+        data_tree = ttk.Treeview(table_shell, columns=columns, show="headings")
+        data_tree.heading("name", text="文件名")
+        data_tree.heading("type", text="类型")
+        data_tree.heading("size", text="大小")
+        data_tree.heading("updated", text="更新时间")
+        data_tree.column("name", width=340, anchor="w")
+        data_tree.column("type", width=100, anchor="center")
+        data_tree.column("size", width=120, anchor="e")
+        data_tree.column("updated", width=200, anchor="center")
+        data_tree.grid(row=0, column=0, sticky="nsew")
+        data_tree.bind("<Double-1>", lambda _: self._set_selected_as_input())
+
+        scrollbar = ttk.Scrollbar(table_shell, orient="vertical", command=data_tree.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        data_tree.configure(yscrollcommand=scrollbar.set)
+
+        self.data_tree = data_tree
+        manager.protocol("WM_DELETE_WINDOW", self._close_data_manager)
+        self._refresh_data_tree()
+
+    def _close_data_manager(self):
+        if self.data_manager_window and self.data_manager_window.winfo_exists():
+            self.data_manager_window.destroy()
+        self.data_manager_window = None
+        self.data_tree = None
+
+    def _refresh_data_tree(self):
+        if self.data_tree is None:
+            return
+        data_root = self._ensure_data_root()
+        for item in self.data_tree.get_children():
+            self.data_tree.delete(item)
+
+        for file_path in sorted(data_root.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            file_type = "文件夹" if file_path.is_dir() else file_path.suffix.lower().lstrip(".") or "文件"
+            size_text = "-"
+            if file_path.is_file():
+                size_text = f"{file_path.stat().st_size / 1024:.1f} KB"
+            updated = self._format_time(file_path.stat().st_mtime)
+            self.data_tree.insert("", "end", iid=str(file_path), values=(file_path.name, file_type, size_text, updated))
+
+    @staticmethod
+    def _format_time(timestamp: float):
+        return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+
+    def _import_data_files(self):
+        data_root = self._ensure_data_root()
+        selected_files = filedialog.askopenfilenames(
+            title="选择要导入的数据文件",
+            filetypes=[("媒体和标注", "*.jpg *.jpeg *.png *.bmp *.mp4 *.avi *.mov *.mkv *.txt *.json *.yaml *.yml"), ("所有文件", "*.*")],
+        )
+        if not selected_files:
+            return
+
+        imported = 0
+        for file_str in selected_files:
+            src = Path(file_str)
+            target = data_root / src.name
+            stem, suffix = src.stem, src.suffix
+            index = 1
+            while target.exists():
+                target = data_root / f"{stem}_{index}{suffix}"
+                index += 1
+            shutil.copy2(src, target)
+            imported += 1
+
+        self._log(f"数据管理：已导入 {imported} 个文件到 {data_root}")
+        self._refresh_data_tree()
+
+    def _selected_data_path(self):
+        if self.data_tree is None:
+            return None
+        selection = self.data_tree.selection()
+        if not selection:
+            messagebox.showinfo("数据管理", "请先选择一条数据记录。")
+            return None
+        return Path(selection[0])
+
+    def _delete_selected_data(self):
+        selected_path = self._selected_data_path()
+        if selected_path is None:
+            return
+
+        if not messagebox.askyesno("确认删除", f"确定删除 {selected_path.name} 吗？"):
+            return
+        if selected_path.is_dir():
+            shutil.rmtree(selected_path)
+        else:
+            selected_path.unlink(missing_ok=True)
+        self._log(f"数据管理：已删除 {selected_path.name}")
+        self._refresh_data_tree()
+
+    def _set_selected_as_input(self):
+        selected_path = self._selected_data_path()
+        if selected_path is None:
+            return
+        if selected_path.is_dir():
+            messagebox.showinfo("数据管理", "文件夹不能直接作为输入源，请选择图片或视频文件。")
+            return
+        self.source_mode.set("文件")
+        self.source_path.set(str(selected_path))
+        self._toggle_source_mode()
+        self._log(f"数据管理：已将 {selected_path.name} 设为输入源")
+
     def _parse_classes(self):
         raw = self.classes.get().strip()
         if not raw:
@@ -319,7 +471,7 @@ class GoatBehaviorDetectionApp:
 
             output_path = Path(results[0].save_dir)
             self.root.after(0, lambda: self._on_detection_success(output_path))
-        except Exception:
+        except Exception as exc:
             self.root.after(0, lambda: self._on_detection_error(exc))
 
     def _run_camera_detection(self, classes):
